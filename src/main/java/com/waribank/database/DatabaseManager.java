@@ -1,7 +1,6 @@
 package com.waribank.database;
 
 import java.sql.*;
-import java.util.logging.Logger;
 import java.util.logging.Level;
 
 /**
@@ -12,7 +11,6 @@ import java.util.logging.Level;
 public class DatabaseManager {
     private static DatabaseManager instance;
     private static final String DB_URL = "jdbc:sqlite:waribank.db";
-    private static final Logger LOGGER = Logger.getLogger(DatabaseManager.class.getName());
     
     private DatabaseManager() {
         // Private constructor for singleton pattern
@@ -31,9 +29,7 @@ public class DatabaseManager {
     public void initializeDatabase() {
         try (Connection conn = getConnection()) {
             createTables(conn);
-            LOGGER.info("Database initialized successfully");
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Failed to initialize database", e);
             throw new RuntimeException("Database initialization failed", e);
         }
     }
@@ -61,7 +57,6 @@ public class DatabaseManager {
                     "first_name TEXT NOT NULL," +
                     "last_name TEXT NOT NULL," +
                     "email TEXT UNIQUE NOT NULL," +
-                    "phone_number TEXT," +
                     "address TEXT," +
                     "national_id TEXT UNIQUE NOT NULL," +
                     "registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
@@ -83,7 +78,6 @@ public class DatabaseManager {
                     "balance REAL DEFAULT 0.0," +
                     "interest_rate REAL DEFAULT 0.0," +
                     "opening_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                    "last_transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                     "status TEXT DEFAULT 'ACTIVE'," +
                     "minimum_balance REAL DEFAULT 0.0," +
                     "daily_withdrawal_limit REAL DEFAULT 10000.0," +
@@ -103,7 +97,6 @@ public class DatabaseManager {
                     "transaction_type TEXT NOT NULL," +
                     "amount REAL NOT NULL," +
                     "description TEXT," +
-                    "transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                     "status TEXT DEFAULT 'PENDING'," +
                     "reference_number TEXT UNIQUE NOT NULL," +
                     "to_account_id INTEGER," +
@@ -145,18 +138,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Close database connection
-     */
-    public void closeConnection(Connection conn) {
-        if (conn != null) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Error closing database connection", e);
-            }
-        }
-    }
     
     /**
      * Test database connection
@@ -165,7 +146,6 @@ public class DatabaseManager {
         try (Connection conn = getConnection()) {
             return conn != null && !conn.isClosed();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Database connection test failed", e);
             return false;
         }
     }
