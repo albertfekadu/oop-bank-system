@@ -1,0 +1,142 @@
+package com.waribank.dao;
+
+import com.waribank.database.DatabaseManager;
+import com.waribank.model.Customer;
+import com.waribank.exception.CustomerNotFoundException;
+
+import java.sql.*;
+import java.util.logging.Logger;
+
+/**
+ * Data Access Object for Customer entity
+ * 
+ * @author Albert Fekadu Wari
+ */
+public class CustomerDAO {
+    private static final Logger LOGGER = Logger.getLogger(CustomerDAO.class.getName());
+    private final DatabaseManager dbManager;
+    
+    public CustomerDAO() {
+        this.dbManager = DatabaseManager.getInstance();
+    }
+    
+    /**
+     * Create a new customer
+     */
+    public Customer createCustomer(Customer customer) throws SQLException {
+        String sql = "INSERT INTO customers (first_name, last_name, email, phone_number, address, national_id, " +
+                    "registration_date, status, credit_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            pstmt.setString(1, customer.getFirstName());
+            pstmt.setString(2, customer.getLastName());
+            pstmt.setString(3, customer.getEmail());
+            pstmt.setString(4, customer.getPhoneNumber());
+            pstmt.setString(5, customer.getAddress());
+            pstmt.setString(6, customer.getNationalId());
+            pstmt.setTimestamp(7, Timestamp.valueOf(customer.getRegistrationDate()));
+            pstmt.setString(8, customer.getStatus());
+            pstmt.setDouble(9, customer.getCreditScore());
+            
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating customer failed, no rows affected.");
+            }
+            
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    customer.setCustomerId(generatedKeys.getInt(1));
+                    LOGGER.info("Customer created with ID: " + customer.getCustomerId());
+                    return customer;
+                } else {
+                    throw new SQLException("Creating customer failed, no ID obtained.");
+                }
+            }
+        }
+    }
+    
+    /**
+     * Find customer by ID
+     */
+    public Customer findById(int customerId) throws SQLException, CustomerNotFoundException {
+        String sql = "SELECT * FROM customers WHERE customer_id = ?";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, customerId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToCustomer(rs);
+                } else {
+                    throw new CustomerNotFoundException("Customer not found", customerId);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Find customer by email
+     */
+    public Customer findByEmail(String email) throws SQLException, CustomerNotFoundException {
+        String sql = "SELECT * FROM customers WHERE email = ?";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, email);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToCustomer(rs);
+                } else {
+                    throw new CustomerNotFoundException("Customer not found", email, true);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Find customer by national ID
+     */
+    public Customer findByNationalId(String nationalId) throws SQLException, CustomerNotFoundException {
+        String sql = "SELECT * FROM customers WHERE national_id = ?";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, nationalId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToCustomer(rs);
+                } else {
+                    throw new CustomerNotFoundException("Customer not found", nationalId);
+                }
+            }
+        }
+    }
+    
+
+    
+    /**
+     * Map ResultSet to Customer object
+     */
+    private Customer mapResultSetToCustomer(ResultSet rs) throws SQLException {
+        Customer customer = new Customer();
+        customer.setCustomerId(rs.getInt("customer_id"));
+        customer.setFirstName(rs.getString("first_name"));
+        customer.setLastName(rs.getString("last_name"));
+        customer.setEmail(rs.getString("email"));
+        customer.setPhoneNumber(rs.getString("phone_number"));
+        customer.setAddress(rs.getString("address"));
+        customer.setNationalId(rs.getString("national_id"));
+        customer.setRegistrationDate(rs.getTimestamp("registration_date").toLocalDateTime());
+        customer.setStatus(rs.getString("status"));
+        customer.setCreditScore(rs.getDouble("credit_score"));
+        return customer;
+    }
+} 
