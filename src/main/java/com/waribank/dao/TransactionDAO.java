@@ -79,6 +79,123 @@ public class TransactionDAO {
     }
     
     /**
+     * Create a transfer transaction
+     */
+    public Transaction createTransfer(String fromAccountNumber, String toAccountNumber, Transaction transaction) 
+            throws SQLException, AccountNotFoundException, InsufficientBalanceException, InvalidTransactionException {
+        
+        Account fromAccount = accountDAO.findByAccountNumber(fromAccountNumber);
+        Account toAccount = accountDAO.findByAccountNumber(toAccountNumber);
+        
+        transaction.setAccountId(fromAccount.getAccountId());
+        transaction.setToAccountId(toAccount.getAccountId());
+        
+        // Validate transfer
+        if (!fromAccount.isActive() || !toAccount.isActive()) {
+            throw new InvalidTransactionException("One or both accounts are not active");
+        }
+        
+        if (!fromAccount.hasSufficientBalance(transaction.getAmount())) {
+            throw new InsufficientBalanceException("Insufficient balance for transfer", 
+                                                 transaction.getAmount(), fromAccount.getBalance());
+        }
+        
+        // Update both account balances
+        fromAccount.withdraw(transaction.getAmount());
+        toAccount.deposit(transaction.getAmount());
+        
+        accountDAO.updateAccount(fromAccount);
+        accountDAO.updateAccount(toAccount);
+        
+        // Save transaction
+        String sql = "INSERT INTO transactions (account_id, transaction_type, amount, description, " +
+                    "transaction_date, status, reference_number, to_account_id, balance_after_transaction) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            pstmt.setInt(1, transaction.getAccountId());
+            pstmt.setString(2, transaction.getTransactionType());
+            pstmt.setDouble(3, transaction.getAmount());
+            pstmt.setString(4, transaction.getDescription());
+            pstmt.setTimestamp(5, Timestamp.valueOf(transaction.getTransactionDate()));
+            pstmt.setString(6, transaction.getStatus());
+            pstmt.setString(7, transaction.getReferenceNumber());
+            pstmt.setInt(8, transaction.getToAccountId());
+            pstmt.setDouble(9, fromAccount.getBalance());
+            
+            int affectedRows = pstmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating transfer transaction failed, no rows affected.");
+            }
+            
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    transaction.setTransactionId(generatedKeys.getInt(1));
+                    transaction.setBalanceAfterTransaction(fromAccount.getBalance());
+                    transaction.markCompleted();
+                    LOGGER.info("Transfer transaction created with ID: " + transaction.getTransactionId());
+                    return transaction;
+                } else {
+                    throw new SQLException("Creating transfer transaction failed, no ID obtained.");
+                }
+            }
+        }
+    }
+    
+    /**
+     * Find transaction by ID
+     */
+    public Transaction findById(int transactionId) throws SQLException {
+        String sql = "SELECT * FROM transactions WHERE transaction_id = ?";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, transactionId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToTransaction(rs);
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Find transactions by account number
+     */
+    public List<Transaction> findByAccountNumber(String accountNumber) throws SQLException, AccountNotFoundException {
+        Account account = accountDAO.findByAccountNumber(accountNumber);
+        return findByAccountId(account.getAccountId());
+    }
+    
+    /**
+     * Find transactions by account ID
+     */
+    public List<Transaction> findByAccountId(int accountId) throws SQLException {
+        String sql = "SELECT * FROM transactions WHERE account_id = ? ORDER BY transaction_date DESC";
+        List<Transaction> transactions = new ArrayList<>();
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, accountId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    transactions.add(mapResultSetToTransaction(rs));
+                }
+            }
+        }
+        
+        return transactions;
+    }
+    
+    /**
      * Get all transactions
      */
     public List<Transaction> findAll() throws SQLException {
@@ -162,7 +279,26 @@ public class TransactionDAO {
         }
     }
     
-
+    /**
+     * Validate transaction
+     */
+    private void validateTransaction(Account account, Transaction transaction) throws InsufficientBalanceException, InvalidTransactionException {
+        if (!account.isActive()) {
+            throw new InvalidTransactionException("Account is not active", transaction.getTransactionType(), transaction.getAmount());
+        }
+        
+        if ("WITHDRAWAL".equals(transaction.getTransactionType()) || "TRANSFER".equals(transaction.getTransactionType())) {
+            if (!account.hasSufficientBalance(transaction.getAmount())) {
+                throw new InsufficientBalanceException("Insufficient balance", transaction.getAmount(), account.getBalance());
+            }
+        }
+        
+        if (transaction.getAmount() <= 0) {
+            throw new InvalidTransactionException("Transaction amount must be greater than zero", 
+                                               transaction.getTransactionType(), transaction.getAmount());
+        }
+    }
+    
     /**
      * Update account balance based on transaction
      */

@@ -107,6 +107,66 @@ public class AccountDAO {
     }
     
     /**
+     * Find accounts by customer ID
+     */
+    public List<Account> findByCustomerId(int customerId) throws SQLException {
+        String sql = "SELECT * FROM accounts WHERE customer_id = ? ORDER BY account_id";
+        List<Account> accounts = new ArrayList<>();
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, customerId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    accounts.add(mapResultSetToAccount(rs));
+                }
+            }
+        }
+        
+        return accounts;
+    }
+    
+    /**
+     * Get all accounts
+     */
+    public List<Account> findAll() throws SQLException {
+        String sql = "SELECT * FROM accounts ORDER BY account_id";
+        List<Account> accounts = new ArrayList<>();
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                accounts.add(mapResultSetToAccount(rs));
+            }
+        }
+        
+        return accounts;
+    }
+    
+    /**
+     * Get active accounts
+     */
+    public List<Account> findActiveAccounts() throws SQLException {
+        String sql = "SELECT * FROM accounts WHERE status = 'ACTIVE' ORDER BY account_id";
+        List<Account> accounts = new ArrayList<>();
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                accounts.add(mapResultSetToAccount(rs));
+            }
+        }
+        
+        return accounts;
+    }
+    
+    /**
      * Update account
      */
     public boolean updateAccount(Account account) throws SQLException {
