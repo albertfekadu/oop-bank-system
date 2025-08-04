@@ -97,21 +97,6 @@ OOP Final Project — 2025
 
 ---
 
-## ✅ Submission Ready
-
-All requirements from the assignment are met:
-
-* OOP design (21 classes, 2 interfaces, 1 abstract class)
-* JDBC with SQLite (4 tables, CRUD operations)
-* Java Collections (List, Map, Set)
-* CLI interface (menu-driven)
-* File I/O (logging and config)
-* Exception handling (4 custom exceptions)
-
-No external libraries, no GUI, no fluff.
-
----
-
 ## 🚀 Quick Start
 
 1. Make sure you have Java JDK installed
