@@ -4,6 +4,9 @@ WariBank is a comprehensive, command-line banking simulation system developed as
 
 The application provides a user-friendly CLI for managing customers, accounts, transactions, and loans in a simulated banking environment.
 
+<img width="712" height="279" alt="Screenshot 2025-08-05 at 1 30 56 AM" src="https://github.com/user-attachments/assets/d9d10b2f-4699-432c-829a-5693a17323ca" />
+
+
 ## Key Features
 
 - **Customer & Account Management**: Register customers and open unique savings/checking accounts.
