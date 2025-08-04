@@ -77,7 +77,7 @@ src/main/java/com/waribank/
 
 1.  **Clone the repository**:
     ```bash
-    git clone <https://github.com/albertfekadu/oop-bank-system.git>
+    git clone https://github.com/albertfekadu/oop-bank-system.git
     cd oop-bank-system
     ```
 2.  **Make the run script executable**:

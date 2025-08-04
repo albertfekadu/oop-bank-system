@@ -1,25 +1,32 @@
 #!/bin/bash
 
-# WariBank CLI Application Runner
-echo "Starting WariBank Mini Banking System..."
+echo "WariBank Mini Banking System"
 echo "Author: Albert Fekadu Wari"
 echo ""
 
-# Check if Java is installed
-if ! command -v java &> /dev/null; then
-    echo "Error: Java is not installed or not in PATH"
-    echo "Please install Java 8 or higher and try again."
-    exit 1
+# Create output directory
+mkdir -p build
+
+# Download SQLite JDBC driver if not exists
+if [ ! -f "sqlite-jdbc-3.42.0.0.jar" ]; then
+    echo "Downloading SQLite JDBC driver..."
+    curl -L -o sqlite-jdbc-3.42.0.0.jar https://github.com/xerial/sqlite-jdbc/releases/download/3.42.0.0/sqlite-jdbc-3.42.0.0.jar
 fi
 
-echo "Java version: $(java -version 2>&1 | head -n 1)"
-echo ""
+echo "Compiling Java files..."
 
-echo "Building and running WariBank..."
-echo ""
+# Compile main classes
+javac -cp ".:sqlite-jdbc-3.42.0.0.jar" -d build src/main/java/com/waribank/*.java src/main/java/com/waribank/*/*.java
 
-# Run the application
-mvn clean compile exec:java -Dexec.mainClass="com.waribank.WariBankApp"
-
-echo ""
-echo "Thank you for using WariBank!" 
+if [ $? -eq 0 ]; then
+    echo "Compilation successful!"
+    echo ""
+    echo "Starting WariBank..."
+    echo ""
+    
+    # Run the application
+    java -cp ".:build:sqlite-jdbc-3.42.0.0.jar" com.waribank.WariBankApp
+else
+    echo "Compilation failed!"
+    exit 1
+fi 

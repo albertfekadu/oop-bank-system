@@ -14,11 +14,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-/**
- * Data Access Object for Transaction entity
- * 
- * @author Albert Fekadu Wari
- */
 public class TransactionDAO {
     private static final Logger LOGGER = Logger.getLogger(TransactionDAO.class.getName());
     private final DatabaseManager dbManager;
@@ -29,9 +24,6 @@ public class TransactionDAO {
         this.accountDAO = new AccountDAO();
     }
     
-    /**
-     * Create a new transaction
-     */
     public Transaction createTransaction(String accountNumber, Transaction transaction) throws SQLException, AccountNotFoundException, InsufficientBalanceException, InvalidTransactionException {
         Account account = accountDAO.findByAccountNumber(accountNumber);
         transaction.setAccountId(account.getAccountId());
@@ -78,9 +70,6 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Create a transfer transaction
-     */
     public Transaction createTransfer(String fromAccountNumber, String toAccountNumber, Transaction transaction) 
             throws SQLException, AccountNotFoundException, InsufficientBalanceException, InvalidTransactionException {
         
@@ -144,9 +133,6 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Find transaction by ID
-     */
     public Transaction findById(int transactionId) throws SQLException {
         String sql = "SELECT * FROM transactions WHERE transaction_id = ?";
         
@@ -165,17 +151,11 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Find transactions by account number
-     */
     public List<Transaction> findByAccountNumber(String accountNumber) throws SQLException, AccountNotFoundException {
         Account account = accountDAO.findByAccountNumber(accountNumber);
         return findByAccountId(account.getAccountId());
     }
     
-    /**
-     * Find transactions by account ID
-     */
     public List<Transaction> findByAccountId(int accountId) throws SQLException {
         String sql = "SELECT * FROM transactions WHERE account_id = ? ORDER BY transaction_date DESC";
         List<Transaction> transactions = new ArrayList<>();
@@ -195,9 +175,6 @@ public class TransactionDAO {
         return transactions;
     }
     
-    /**
-     * Get all transactions
-     */
     public List<Transaction> findAll() throws SQLException {
         String sql = "SELECT * FROM transactions ORDER BY transaction_date DESC";
         List<Transaction> transactions = new ArrayList<>();
@@ -214,9 +191,6 @@ public class TransactionDAO {
         return transactions;
     }
     
-    /**
-     * Get completed transactions
-     */
     public List<Transaction> findCompletedTransactions() throws SQLException {
         String sql = "SELECT * FROM transactions WHERE status = 'COMPLETED' ORDER BY transaction_date DESC";
         List<Transaction> transactions = new ArrayList<>();
@@ -233,9 +207,6 @@ public class TransactionDAO {
         return transactions;
     }
     
-    /**
-     * Update transaction
-     */
     public boolean updateTransaction(Transaction transaction) throws SQLException {
         String sql = "UPDATE transactions SET account_id = ?, transaction_type = ?, amount = ?, " +
                     "description = ?, transaction_date = ?, status = ?, " +
@@ -262,9 +233,6 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Delete transaction
-     */
     public boolean deleteTransaction(int transactionId) throws SQLException {
         String sql = "DELETE FROM transactions WHERE transaction_id = ?";
         
@@ -279,9 +247,6 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Validate transaction
-     */
     private void validateTransaction(Account account, Transaction transaction) throws InsufficientBalanceException, InvalidTransactionException {
         if (!account.isActive()) {
             throw new InvalidTransactionException("Account is not active", transaction.getTransactionType(), transaction.getAmount());
@@ -299,9 +264,6 @@ public class TransactionDAO {
         }
     }
     
-    /**
-     * Update account balance based on transaction
-     */
     private void updateAccountBalance(Account account, Transaction transaction) throws SQLException, InvalidTransactionException {
         double newBalance = account.getBalance();
         
@@ -329,9 +291,6 @@ public class TransactionDAO {
         transaction.setBalanceAfterTransaction(newBalance);
     }
     
-    /**
-     * Map ResultSet to Transaction object
-     */
     private Transaction mapResultSetToTransaction(ResultSet rs) throws SQLException {
         Transaction transaction = new Transaction();
         transaction.setTransactionId(rs.getInt("transaction_id"));
@@ -343,8 +302,12 @@ public class TransactionDAO {
         transaction.setStatus(rs.getString("status"));
         transaction.setReferenceNumber(rs.getString("reference_number"));
         
-        Integer toAccountId = rs.getObject("to_account_id", Integer.class);
-        transaction.setToAccountId(toAccountId);
+        int toAccountId = rs.getInt("to_account_id");
+        if (rs.wasNull()) {
+            transaction.setToAccountId(null);
+        } else {
+            transaction.setToAccountId(toAccountId);
+        }
         
         transaction.setBalanceAfterTransaction(rs.getDouble("balance_after_transaction"));
         return transaction;

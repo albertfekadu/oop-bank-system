@@ -4,19 +4,12 @@ import com.waribank.ui.CLIInterface;
 import com.waribank.database.DatabaseManager;
 import com.waribank.utils.AppLogger;
 
-/**
- * Main application class for WariBank - Microfinance Simulation Platform
- * 
- * @author Albert Fekadu Wari
- */
 public class WariBankApp {
     
     public static void main(String[] args) {
-        System.out.println("╔══════════════════════════════════════════════════════════════╗");
-        System.out.println("║                    WARI BANK CLI                            ║");
-        System.out.println("║              Microfinance Simulation Platform               ║");
-        System.out.println("║                    Version 1.0.0                           ║");
-        System.out.println("╚══════════════════════════════════════════════════════════════╝");
+        System.out.println("WARI BANK CLI");
+        System.out.println("Microfinance Simulation Platform");
+        System.out.println("Version 1.0.0");
         System.out.println();
         
         try {
